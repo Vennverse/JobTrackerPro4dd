@@ -288,8 +288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Resume Analysis and Onboarding Routes
-  app.post('/api/resume/upload', isAuthenticated, upload.single('resume'), async (req: any, res) => {
+  // Resume Analysis and Onboarding Routes (with usage limit)
+  app.post('/api/resume/upload', isAuthenticated, checkUsageLimit('resumeAnalyses'), upload.single('resume'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       
@@ -339,6 +339,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastResumeAnalysis: new Date(),
       });
 
+      // Track usage after successful analysis
+      await trackUsage(req);
+
       res.json({
         success: true,
         analysis,
@@ -373,8 +376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced Job Analysis Routes with Groq AI
-  app.post('/api/jobs/analyze', isAuthenticated, async (req: any, res) => {
+  // Enhanced Job Analysis Routes with Groq AI (with usage limit)
+  app.post('/api/jobs/analyze', isAuthenticated, checkUsageLimit('jobAnalyses'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { jobUrl, jobTitle, company, jobDescription, requirements, qualifications, benefits } = req.body;
@@ -472,6 +475,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         interviewPrepTips: analysis.interviewPrepTips,
         processingTime
       });
+
+      // Track usage after successful analysis
+      await trackUsage(req);
 
       res.json(jobAnalysis);
     } catch (error) {
@@ -646,6 +652,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching complete profile:", error);
       res.status(500).json({ message: "Failed to fetch complete profile" });
+    }
+  });
+
+  // Subscription Management Routes (PayPal Integration for India support)
+  app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await subscriptionService.getUserSubscription(userId);
+      const usageStats = await subscriptionService.getUsageStats(userId);
+      
+      res.json({
+        subscription,
+        usage: usageStats,
+        limits: subscription.planType === 'premium' ? null : USAGE_LIMITS.free
+      });
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ message: "Failed to fetch subscription status" });
+    }
+  });
+
+  app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { paypalOrderId, paypalSubscriptionId } = req.body;
+      
+      if (!paypalOrderId || !paypalSubscriptionId) {
+        return res.status(400).json({ message: "PayPal order ID and subscription ID are required" });
+      }
+
+      // Update user subscription to premium
+      await subscriptionService.updateUserSubscription(userId, {
+        planType: 'premium',
+        subscriptionStatus: 'active',
+        paypalSubscriptionId,
+        paypalOrderId,
+        subscriptionStartDate: new Date(),
+        subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Successfully upgraded to premium plan" 
+      });
+    } catch (error) {
+      console.error("Error upgrading subscription:", error);
+      res.status(500).json({ message: "Failed to upgrade subscription" });
+    }
+  });
+
+  app.post('/api/subscription/cancel', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      await subscriptionService.updateUserSubscription(userId, {
+        planType: 'free',
+        subscriptionStatus: 'canceled',
+        paypalSubscriptionId: null,
+        paypalOrderId: null,
+        subscriptionEndDate: new Date()
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Subscription canceled successfully" 
+      });
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      res.status(500).json({ message: "Failed to cancel subscription" });
+    }
+  });
+
+  // PayPal Webhook for subscription events
+  app.post('/api/webhook/paypal', async (req, res) => {
+    try {
+      const event = req.body;
+      
+      if (event.event_type === 'BILLING.SUBSCRIPTION.CANCELLED' || 
+          event.event_type === 'BILLING.SUBSCRIPTION.SUSPENDED') {
+        const subscriptionId = event.resource.id;
+        
+        // Find user by PayPal subscription ID and downgrade
+        const user = await storage.getUserByPaypalSubscription(subscriptionId);
+        if (user) {
+          await subscriptionService.updateUserSubscription(user.id, {
+            planType: 'free',
+            subscriptionStatus: 'canceled'
+          });
+        }
+      }
+
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error("Error handling PayPal webhook:", error);
+      res.status(500).json({ message: "Webhook processing failed" });
     }
   });
 
