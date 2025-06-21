@@ -244,7 +244,7 @@ export default function Onboarding() {
       description: "Tell us about yourself",
       content: (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="fullName">Full Name *</Label>
               <Input
@@ -275,7 +275,7 @@ export default function Onboarding() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="yearsExperience">Years of Experience</Label>
               <Input
@@ -377,7 +377,7 @@ export default function Onboarding() {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="city">City *</Label>
               <Input
@@ -407,7 +407,7 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="preferredWorkMode">Preferred Work Mode</Label>
               <Select
@@ -426,7 +426,7 @@ export default function Onboarding() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2 pt-6">
+            <div className="flex items-center space-x-2 pt-0 sm:pt-6">
               <Checkbox
                 id="willingToRelocate"
                 checked={formData.willingToRelocate || false}
@@ -538,7 +538,7 @@ export default function Onboarding() {
       description: "Set your salary expectations and availability",
       content: (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="desiredSalaryMin">Minimum Salary (USD)</Label>
               <Input
@@ -599,7 +599,7 @@ export default function Onboarding() {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="majorFieldOfStudy">Field of Study</Label>
               <Input
@@ -626,18 +626,18 @@ export default function Onboarding() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-4 sm:py-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Complete Your Profile</h1>
-          <p className="text-gray-600">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Complete Your Profile</h1>
+          <p className="text-gray-600 text-sm sm:text-base px-2">
             Set up your profile to enable smart job matching and auto-fill features
           </p>
         </div>
 
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium">Progress</span>
             <span className="text-sm text-gray-600">
