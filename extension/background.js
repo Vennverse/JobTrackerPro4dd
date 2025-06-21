@@ -6,9 +6,12 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     console.log('AutoJobr extension installed');
     // Set default settings
+    // Use the current deployment URL
+    const apiUrl = 'https://60e68a76-86c4-4eef-b2f5-8a97de774d09-00-f9a0u7nh8k0p.kirk.replit.dev';
+    
     chrome.storage.sync.set({
       autofillEnabled: true,
-      apiUrl: 'http://localhost:5000', // Default to local development
+      apiUrl: apiUrl,
       lastAnalysis: null,
       userProfile: null
     });
