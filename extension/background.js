@@ -11,9 +11,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     
     // Check for common AutoJobr deployment patterns
     const possibleUrls = [
-      'https://autojobr-ai-powered-job-application-platform.replit.app',
-      'https://autojobr.replit.app',
-      window.location?.origin // If installed from the web app itself
+      'https://60e68a76-86c4-4eef-b2f5-8a97de774d09-00-f9a0u7nh8k0p.kirk.replit.dev',
+      'http://localhost:5000'
     ];
     
     for (const url of possibleUrls) {
