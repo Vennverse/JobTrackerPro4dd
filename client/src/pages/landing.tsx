@@ -47,7 +47,7 @@ export default function Landing() {
                 <Rocket className="w-4 h-4 mr-2" />
                 Get Started Free
               </Button>
-              <Button size="lg" variant="outline" onClick={() => window.open('/extension/README.md', '_blank')}>
+              <Button size="lg" variant="outline" onClick={() => window.open('/extension/install.html', '_blank')}>
                 <Chrome className="w-4 h-4 mr-2" />
                 Install Extension
               </Button>
@@ -218,7 +218,7 @@ export default function Landing() {
                 size="lg"
                 variant="secondary"
                 className="bg-white text-purple-600 hover:bg-white/90"
-                onClick={() => window.open('/extension/README.md', '_blank')}
+                onClick={() => window.open('/extension/install.html', '_blank')}
               >
                 <Chrome className="w-4 h-4 mr-2" />
                 Install Extension

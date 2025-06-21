@@ -80,7 +80,11 @@ The application is deployed on Replit with the following configuration:
 
 Preferred communication style: Simple, everyday language.
 
-## Changelog
+## Recent Changes
 
-Changelog:
-- June 21, 2025. Initial setup
+Recent updates to the AutoJobr platform:
+- June 21, 2025: Complete Chrome extension implementation with auto-fill forms, job analysis, and application tracking
+- June 21, 2025: Enhanced landing page with Chrome extension showcase and installation guide
+- June 21, 2025: Added extension file serving routes and comprehensive documentation
+- June 21, 2025: Implemented real-time job matching analysis with in-browser NLP processing
+- June 21, 2025: Created complete web application with authentication, profile management, and dashboard
