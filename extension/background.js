@@ -144,25 +144,50 @@ async function getUserProfile(sendResponse) {
   }
 }
 
-// Handle job analysis and matching
+// Handle enhanced AI job analysis with Groq
 async function handleJobAnalysis(jobData, sendResponse) {
   try {
-    const { userProfile } = await chrome.storage.sync.get(['userProfile']);
+    const config = new ExtensionConfig();
+    const apiUrl = await config.getApiUrl();
     
-    if (!userProfile || !userProfile.skills) {
-      sendResponse({ success: false, error: 'User profile not available' });
+    if (!apiUrl) {
+      sendResponse({ success: false, error: 'API URL not configured' });
       return;
     }
+
+    // Send job data to backend for AI analysis
+    const response = await fetch(`${apiUrl}/api/jobs/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        jobUrl: jobData.url || window.location.href,
+        jobTitle: jobData.title,
+        company: jobData.company,
+        jobDescription: jobData.description,
+        requirements: jobData.requirements,
+        qualifications: jobData.qualifications,
+        benefits: jobData.benefits
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const analysisResult = await response.json();
     
-    // Perform job matching analysis
-    const analysis = analyzeJobMatch(jobData, userProfile);
+    // Store enhanced analysis results
+    await chrome.storage.sync.set({ 
+      lastAnalysis: analysisResult,
+      lastAnalysisTimestamp: Date.now()
+    });
     
-    // Store analysis results
-    await chrome.storage.sync.set({ lastAnalysis: analysis });
-    
-    sendResponse({ success: true, data: analysis });
+    sendResponse({ success: true, data: analysisResult });
   } catch (error) {
-    console.error('Error analyzing job:', error);
+    console.error('Error analyzing job with AI:', error);
     sendResponse({ success: false, error: error.message });
   }
 }

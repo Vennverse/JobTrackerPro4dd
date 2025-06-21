@@ -126,36 +126,40 @@
     }, 3000);
   }
   
-  // Detect and auto-fill form fields
+  // Detect and auto-fill form fields with comprehensive data
   function detectAndFillForms() {
     if (!userProfile) return;
     
-    const { user, profile, skills } = userProfile;
+    const { user, profile, skills, workExperience, education } = userProfile;
     
-    // Common field selectors for different ATS platforms
+    // Comprehensive field selectors for all major ATS platforms and job application forms
     const fieldMappings = {
-      // Name fields
+      // Basic Information
       firstName: [
         'input[name*="first" i][name*="name" i]',
         'input[id*="first" i][id*="name" i]',
         'input[placeholder*="first" i][placeholder*="name" i]',
         'input[name="firstName"]',
-        'input[name="fname"]'
+        'input[name="fname"]',
+        'input[name="first_name"]'
       ],
       lastName: [
         'input[name*="last" i][name*="name" i]',
         'input[id*="last" i][id*="name" i]',
         'input[placeholder*="last" i][placeholder*="name" i]',
         'input[name="lastName"]',
-        'input[name="lname"]'
+        'input[name="lname"]',
+        'input[name="last_name"]'
       ],
       fullName: [
         'input[name*="full" i][name*="name" i]',
         'input[name="name"]',
-        'input[placeholder*="full name" i]'
+        'input[name="fullName"]',
+        'input[placeholder*="full name" i]',
+        'input[name="applicant_name"]'
       ],
       
-      // Contact fields
+      // Contact Information
       email: [
         'input[type="email"]',
         'input[name*="email" i]',
@@ -167,41 +171,241 @@
         'input[name*="phone" i]',
         'input[id*="phone" i]',
         'input[placeholder*="phone" i]',
-        'input[name*="mobile" i]'
+        'input[name*="mobile" i]',
+        'input[name="phoneNumber"]'
       ],
       
-      // Professional fields
+      // Address Information
+      address: [
+        'input[name*="address" i]',
+        'input[id*="address" i]',
+        'input[placeholder*="address" i]',
+        'textarea[name*="address" i]',
+        'input[name="street"]'
+      ],
+      city: [
+        'input[name*="city" i]',
+        'input[id*="city" i]',
+        'input[placeholder*="city" i]'
+      ],
+      state: [
+        'input[name*="state" i]',
+        'input[id*="state" i]',
+        'select[name*="state" i]',
+        'input[placeholder*="state" i]',
+        'input[name="province"]'
+      ],
+      zipCode: [
+        'input[name*="zip" i]',
+        'input[name*="postal" i]',
+        'input[id*="zip" i]',
+        'input[placeholder*="zip" i]',
+        'input[name="zipCode"]'
+      ],
+      country: [
+        'select[name*="country" i]',
+        'input[name*="country" i]',
+        'select[id*="country" i]'
+      ],
+      
+      // Personal Information
+      dateOfBirth: [
+        'input[name*="birth" i]',
+        'input[name*="dob" i]',
+        'input[id*="birth" i]',
+        'input[type="date"][name*="birth" i]'
+      ],
+      
+      // Work Authorization
+      workAuthorization: [
+        'select[name*="work" i][name*="auth" i]',
+        'select[name*="visa" i]',
+        'select[name*="citizenship" i]',
+        'input[name*="work_authorization" i]',
+        'select[name*="legal" i][name*="work" i]'
+      ],
+      requiresSponsorship: [
+        'input[type="checkbox"][name*="sponsor" i]',
+        'input[type="radio"][name*="sponsor" i]',
+        'select[name*="sponsor" i]'
+      ],
+      
+      // Professional Information
+      professionalTitle: [
+        'input[name*="title" i]',
+        'input[name*="position" i]',
+        'input[id*="title" i]',
+        'input[placeholder*="title" i]',
+        'input[name="currentTitle"]'
+      ],
+      yearsExperience: [
+        'input[name*="experience" i][name*="year" i]',
+        'select[name*="experience" i]',
+        'input[name*="years" i]',
+        'input[type="number"][name*="experience" i]'
+      ],
+      
+      // Salary Expectations
+      salaryMin: [
+        'input[name*="salary" i][name*="min" i]',
+        'input[name*="compensation" i][name*="min" i]',
+        'input[name*="expected" i][name*="salary" i]'
+      ],
+      salaryMax: [
+        'input[name*="salary" i][name*="max" i]',
+        'input[name*="compensation" i][name*="max" i]'
+      ],
+      
+      // Availability
+      noticePeriod: [
+        'select[name*="notice" i]',
+        'select[name*="availability" i]',
+        'input[name*="start" i][name*="date" i]'
+      ],
+      
+      // Work Preferences
+      preferredWorkMode: [
+        'select[name*="remote" i]',
+        'select[name*="work" i][name*="mode" i]',
+        'input[name*="remote" i]'
+      ],
+      willingToRelocate: [
+        'input[type="checkbox"][name*="relocate" i]',
+        'input[type="radio"][name*="relocate" i]',
+        'select[name*="relocate" i]'
+      ],
+      
+      // Education
+      highestDegree: [
+        'select[name*="degree" i]',
+        'select[name*="education" i]',
+        'input[name*="degree" i]'
+      ],
+      graduationYear: [
+        'input[name*="graduation" i]',
+        'select[name*="year" i]',
+        'input[type="number"][name*="year" i]'
+      ],
+      fieldOfStudy: [
+        'input[name*="major" i]',
+        'input[name*="field" i]',
+        'input[name*="study" i]'
+      ],
+      
+      // Emergency Contact
+      emergencyContactName: [
+        'input[name*="emergency" i][name*="name" i]',
+        'input[name*="contact" i][name*="name" i]'
+      ],
+      emergencyContactPhone: [
+        'input[name*="emergency" i][name*="phone" i]',
+        'input[name*="contact" i][name*="phone" i]'
+      ],
+      
+      // Diversity and Background
+      veteranStatus: [
+        'select[name*="veteran" i]',
+        'input[name*="veteran" i]'
+      ],
+      ethnicity: [
+        'select[name*="ethnicity" i]',
+        'select[name*="race" i]'
+      ],
+      gender: [
+        'select[name*="gender" i]',
+        'input[name*="gender" i]'
+      ],
+      disabilityStatus: [
+        'select[name*="disability" i]',
+        'input[name*="disability" i]'
+      ],
+      
+      // LinkedIn and Social
       linkedinUrl: [
         'input[name*="linkedin" i]',
-        'input[id*="linkedin" i]',
-        'input[placeholder*="linkedin" i]'
+        'input[placeholder*="linkedin" i]',
+        'input[name*="profile" i]'
+      ],
+      githubUrl: [
+        'input[name*="github" i]',
+        'input[placeholder*="github" i]'
       ],
       portfolioUrl: [
         'input[name*="portfolio" i]',
-        'input[id*="portfolio" i]',
         'input[placeholder*="portfolio" i]',
         'input[name*="website" i]'
       ],
       
-      // Location fields
-      location: [
-        'input[name*="location" i]',
-        'input[name*="city" i]',
-        'input[name*="address" i]',
-        'input[id*="location" i]'
+      // Resume/CV
+      coverLetter: [
+        'textarea[name*="cover" i]',
+        'textarea[name*="letter" i]',
+        'textarea[placeholder*="cover" i]'
+      ],
+      additionalInfo: [
+        'textarea[name*="additional" i]',
+        'textarea[name*="other" i]',
+        'textarea[name*="comments" i]'
       ]
     };
     
-    // Fill fields based on available data
+    // Comprehensive data mapping for auto-fill based on user profile
     const fillData = {
+      // Basic Information
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
-      fullName: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : '',
+      fullName: profile?.fullName || (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : ''),
       email: user?.email || '',
       phone: profile?.phone || '',
+      
+      // Address Information
+      address: profile?.currentAddress || '',
+      city: profile?.city || '',
+      state: profile?.state || '',
+      zipCode: profile?.zipCode || '',
+      country: profile?.country || 'United States',
+      
+      // Personal Information
+      dateOfBirth: profile?.dateOfBirth || '',
+      gender: profile?.gender || '',
+      
+      // Work Authorization
+      workAuthorization: profile?.workAuthorization || '',
+      requiresSponsorship: profile?.requiresSponsorship || false,
+      
+      // Professional Information
+      professionalTitle: profile?.professionalTitle || '',
+      yearsExperience: profile?.yearsExperience?.toString() || '',
+      
+      // Salary and Preferences
+      salaryMin: profile?.desiredSalaryMin?.toString() || '',
+      salaryMax: profile?.desiredSalaryMax?.toString() || '',
+      noticePeriod: profile?.noticePeriod || '',
+      preferredWorkMode: profile?.preferredWorkMode || '',
+      willingToRelocate: profile?.willingToRelocate || false,
+      
+      // Education
+      highestDegree: profile?.highestDegree || '',
+      graduationYear: profile?.graduationYear?.toString() || '',
+      fieldOfStudy: profile?.majorFieldOfStudy || '',
+      
+      // Emergency Contact
+      emergencyContactName: profile?.emergencyContactName || '',
+      emergencyContactPhone: profile?.emergencyContactPhone || '',
+      
+      // Background Information
+      veteranStatus: profile?.veteranStatus || '',
+      ethnicity: profile?.ethnicity || '',
+      disabilityStatus: profile?.disabilityStatus || '',
+      
+      // Professional URLs
       linkedinUrl: profile?.linkedinUrl || '',
+      githubUrl: profile?.githubUrl || '',
       portfolioUrl: profile?.portfolioUrl || '',
-      location: profile?.location || ''
+      
+      // Additional Information
+      coverLetter: generateCoverLetter(profile, workExperience),
+      additionalInfo: profile?.summary || ''
     };
     
     Object.entries(fieldMappings).forEach(([fieldType, selectors]) => {
