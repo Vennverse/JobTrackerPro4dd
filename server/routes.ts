@@ -7,7 +7,7 @@ import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { groqService } from "./groqService";
-import { subscriptionService } from "./subscriptionService";
+import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
 import { 
   insertUserProfileSchema,
   insertUserSkillSchema,

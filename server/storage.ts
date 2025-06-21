@@ -82,9 +82,14 @@ export interface IStorage {
   updateUserSubscription(userId: string, subscriptionData: {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+    paypalSubscriptionId?: string;
+    paypalOrderId?: string;
     subscriptionStatus?: string;
     planType?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
   }): Promise<User>;
+  getUserByPaypalSubscription(paypalSubscriptionId: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -349,8 +354,12 @@ export class DatabaseStorage implements IStorage {
   async updateUserSubscription(userId: string, subscriptionData: {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+    paypalSubscriptionId?: string;
+    paypalOrderId?: string;
     subscriptionStatus?: string;
     planType?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
   }): Promise<User> {
     const [user] = await db
       .update(users)
@@ -360,6 +369,11 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(users.id, userId))
       .returning();
+    return user;
+  }
+
+  async getUserByPaypalSubscription(paypalSubscriptionId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.paypalSubscriptionId, paypalSubscriptionId));
     return user;
   }
 }
