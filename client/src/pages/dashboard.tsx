@@ -74,13 +74,13 @@ export default function Dashboard() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="gradient-hero py-20">
+      <section className="gradient-hero py-12 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-foreground mb-4 sm:mb-6">
               Your Job Search Dashboard
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
               Track applications, monitor progress, and optimize your job search strategy
             </p>
           </div>
@@ -88,16 +88,16 @@ export default function Dashboard() {
       </section>
 
       {/* Dashboard Content */}
-      <section className="py-16 bg-background">
+      <section className="py-8 sm:py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Stats Cards */}
           <StatsCards stats={stats} isLoading={statsLoading} />
 
           {/* Recent Applications */}
-          <Card className="mt-12">
+          <Card className="mt-8 sm:mt-12">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Recent Applications</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <CardTitle className="text-lg sm:text-xl">Recent Applications</CardTitle>
                 <Button variant="outline" size="sm">
                   View All
                 </Button>

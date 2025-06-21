@@ -87,32 +87,105 @@ export function ApplicationsTable({ applications, isLoading, showActions = false
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
-              Company
-            </th>
-            <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
-              Position
-            </th>
-            <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
-              Match
-            </th>
-            <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
-              Status
-            </th>
-            <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
-              Applied
-            </th>
-            {showActions && (
+    <>
+      {/* Mobile Card Layout */}
+      <div className="block md:hidden space-y-4">
+        {applications.map((application) => (
+          <div key={application.id} className="bg-card border border-border rounded-lg p-4 space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="font-medium text-foreground text-sm">{application.jobTitle}</h3>
+                <div className="flex items-center text-muted-foreground text-xs mt-1">
+                  <Building className="w-3 h-3 mr-1" />
+                  <span>{application.company}</span>
+                  {application.location && (
+                    <>
+                      <span className="mx-1">•</span>
+                      <MapPin className="w-3 h-3 mr-1" />
+                      <span>{application.location}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              {showActions && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {application.jobUrl && (
+                      <DropdownMenuItem asChild>
+                        <a href={application.jobUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View Job
+                        </a>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                {getStatusBadge(application.status)}
+                {application.matchScore && (
+                  <div className="flex items-center space-x-1">
+                    <div className="w-12 bg-muted rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${getMatchScoreColor(application.matchScore)}`}
+                        style={{ width: `${application.matchScore}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{application.matchScore}%</span>
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(application.appliedDate), { addSuffix: true })}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table Layout */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border">
               <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
-                Actions
+                Company
               </th>
-            )}
-          </tr>
-        </thead>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
+                Position
+              </th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
+                Match
+              </th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
+                Status
+              </th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
+                Applied
+              </th>
+              {showActions && (
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
+                  Actions
+                </th>
+              )}
+            </tr>
+          </thead>
         <tbody className="divide-y divide-border">
           {applications.map((application) => (
             <tr key={application.id} className="hover:bg-muted/50 transition-colors">
@@ -196,7 +269,8 @@ export function ApplicationsTable({ applications, isLoading, showActions = false
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+    </>
   );
 }

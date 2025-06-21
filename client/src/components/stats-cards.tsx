@@ -15,16 +15,16 @@ interface StatsCardsProps {
 export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[...Array(4)].map((_, i) => (
           <Card key={i}>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <Skeleton className="h-4 w-20 mb-2" />
                   <Skeleton className="h-8 w-16" />
                 </div>
-                <Skeleton className="h-12 w-12 rounded-lg" />
+                <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg" />
               </div>
             </CardContent>
           </Card>
@@ -65,23 +65,23 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {cardData.map((card, index) => {
         const Icon = card.icon;
         return (
           <Card key={index}>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                     {card.title}
                   </p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">
                     {card.value}
                   </p>
                 </div>
-                <div className={`p-3 rounded-lg ${card.bgColor}`}>
-                  <Icon className={`w-6 h-6 ${card.iconColor}`} />
+                <div className={`p-2 sm:p-3 rounded-lg ${card.bgColor}`}>
+                  <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${card.iconColor}`} />
                 </div>
               </div>
             </CardContent>
