@@ -11,6 +11,7 @@ import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
 import Applications from "@/pages/applications";
 import Jobs from "@/pages/jobs";
+import Subscription from "@/pages/subscription";
 import Onboarding from "@/pages/onboarding";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/profile" component={Profile} />
           <Route path="/applications" component={Applications} />
           <Route path="/jobs" component={Jobs} />
+          <Route path="/subscription" component={Subscription} />
         </>
       )}
       <Route component={NotFound} />
