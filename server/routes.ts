@@ -2,15 +2,43 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
 import fs from "fs";
+import multer from "multer";
+const pdfParse = require("pdf-parse");
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { groqService } from "./groqService";
 import { 
   insertUserProfileSchema,
   insertUserSkillSchema,
+  insertWorkExperienceSchema,
+  insertEducationSchema,
   insertJobApplicationSchema,
-  insertJobRecommendationSchema 
+  insertJobRecommendationSchema,
+  insertAiJobAnalysisSchema 
 } from "@shared/schema";
 import { z } from "zod";
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow PDF, DOC, DOCX files
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOC, and DOCX files are allowed.'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint for deployment verification
@@ -223,6 +251,366 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error toggling bookmark:", error);
       res.status(500).json({ message: "Failed to toggle bookmark" });
+    }
+  });
+
+  // Resume Analysis and Onboarding Routes
+  app.post('/api/resume/upload', isAuthenticated, upload.single('resume'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No resume file uploaded" });
+      }
+
+      let resumeText = '';
+      
+      // Extract text from PDF
+      if (req.file.mimetype === 'application/pdf') {
+        try {
+          const pdfData = await pdfParse(req.file.buffer);
+          resumeText = pdfData.text;
+        } catch (error) {
+          console.error("Error parsing PDF:", error);
+          return res.status(400).json({ message: "Failed to parse PDF file" });
+        }
+      } else {
+        // For DOC/DOCX files, we'll need additional processing
+        // For now, return an error asking for PDF
+        return res.status(400).json({ 
+          message: "Please upload a PDF file. DOC/DOCX support coming soon." 
+        });
+      }
+
+      if (!resumeText.trim()) {
+        return res.status(400).json({ message: "No text could be extracted from the resume" });
+      }
+
+      // Get user profile for context
+      const profile = await storage.getUserProfile(userId);
+      
+      // Analyze resume with Groq AI
+      const analysis = await groqService.analyzeResume(resumeText, profile);
+      
+      // Save resume data to profile
+      const resumeFileName = `resume_${userId}_${Date.now()}.pdf`;
+      await storage.upsertUserProfile({
+        userId,
+        resumeText,
+        resumeFileName,
+        atsScore: analysis.atsScore,
+        atsAnalysis: analysis,
+        atsRecommendations: analysis.recommendations,
+        lastResumeAnalysis: new Date(),
+      });
+
+      res.json({
+        success: true,
+        analysis,
+        fileName: resumeFileName,
+        message: "Resume uploaded and analyzed successfully"
+      });
+    } catch (error) {
+      console.error("Error processing resume:", error);
+      res.status(500).json({ message: "Failed to process resume" });
+    }
+  });
+
+  app.get('/api/resume/analysis', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getUserProfile(userId);
+      
+      if (!profile?.atsAnalysis) {
+        return res.status(404).json({ message: "No resume analysis found" });
+      }
+
+      res.json({
+        atsScore: profile.atsScore,
+        analysis: profile.atsAnalysis,
+        recommendations: profile.atsRecommendations,
+        lastAnalysis: profile.lastResumeAnalysis,
+        hasResume: !!profile.resumeText
+      });
+    } catch (error) {
+      console.error("Error fetching resume analysis:", error);
+      res.status(500).json({ message: "Failed to fetch resume analysis" });
+    }
+  });
+
+  // Enhanced Job Analysis Routes with Groq AI
+  app.post('/api/jobs/analyze', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { jobUrl, jobTitle, company, jobDescription, requirements, qualifications, benefits } = req.body;
+
+      if (!jobUrl || !jobTitle || !company || !jobDescription) {
+        return res.status(400).json({ 
+          message: "Job URL, title, company, and description are required" 
+        });
+      }
+
+      // Check if we already have a recent analysis for this job
+      const existingAnalysis = await storage.getJobAnalysisByUrl(userId, jobUrl);
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
+      if (existingAnalysis && existingAnalysis.createdAt && existingAnalysis.createdAt > oneHourAgo) {
+        return res.json(existingAnalysis);
+      }
+
+      // Get comprehensive user profile for analysis
+      const [profile, skills, workExperience, education] = await Promise.all([
+        storage.getUserProfile(userId),
+        storage.getUserSkills(userId),
+        storage.getUserWorkExperience(userId),
+        storage.getUserEducation(userId)
+      ]);
+
+      if (!profile) {
+        return res.status(400).json({ 
+          message: "Please complete your profile before analyzing jobs" 
+        });
+      }
+
+      const userProfile = {
+        skills: skills.map(skill => ({
+          skillName: skill.skillName,
+          proficiencyLevel: skill.proficiencyLevel || undefined,
+          yearsExperience: skill.yearsExperience || undefined
+        })),
+        workExperience: workExperience.map(exp => ({
+          position: exp.position,
+          company: exp.company,
+          description: exp.description || undefined
+        })),
+        education: education.map(edu => ({
+          degree: edu.degree,
+          fieldOfStudy: edu.fieldOfStudy || undefined,
+          institution: edu.institution
+        })),
+        yearsExperience: profile.yearsExperience || undefined,
+        professionalTitle: profile.professionalTitle || undefined,
+        summary: profile.summary || undefined
+      };
+
+      const jobData = {
+        title: jobTitle,
+        company,
+        description: jobDescription,
+        requirements,
+        qualifications,
+        benefits
+      };
+
+      const startTime = Date.now();
+      
+      // Analyze job match with Groq AI
+      const analysis = await groqService.analyzeJobMatch(jobData, userProfile);
+      
+      const processingTime = Date.now() - startTime;
+
+      // Save analysis to database
+      const jobAnalysis = await storage.addJobAnalysis({
+        userId,
+        jobUrl,
+        jobTitle,
+        company,
+        jobDescription,
+        requirements,
+        qualifications,
+        benefits,
+        matchScore: analysis.matchScore,
+        matchingSkills: analysis.matchingSkills,
+        missingSkills: analysis.missingSkills,
+        skillGaps: analysis.skillGaps,
+        seniorityLevel: analysis.seniorityLevel,
+        workMode: analysis.workMode,
+        jobType: analysis.jobType,
+        salaryRange: undefined, // Will be extracted separately
+        location: undefined, // Will be extracted separately
+        roleComplexity: analysis.roleComplexity,
+        careerProgression: analysis.careerProgression,
+        industryFit: analysis.industryFit,
+        cultureFit: analysis.cultureFit,
+        applicationRecommendation: analysis.applicationRecommendation,
+        tailoringAdvice: analysis.tailoringAdvice,
+        interviewPrepTips: analysis.interviewPrepTips,
+        processingTime
+      });
+
+      res.json(jobAnalysis);
+    } catch (error) {
+      console.error("Error analyzing job:", error);
+      res.status(500).json({ message: "Failed to analyze job" });
+    }
+  });
+
+  app.get('/api/jobs/analyses', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const analyses = await storage.getUserJobAnalyses(userId);
+      res.json(analyses);
+    } catch (error) {
+      console.error("Error fetching job analyses:", error);
+      res.status(500).json({ message: "Failed to fetch job analyses" });
+    }
+  });
+
+  // Onboarding Status and Completion Routes
+  app.get('/api/onboarding/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [profile, skills, workExperience, education] = await Promise.all([
+        storage.getUserProfile(userId),
+        storage.getUserSkills(userId),
+        storage.getUserWorkExperience(userId),
+        storage.getUserEducation(userId)
+      ]);
+
+      const hasBasicInfo = !!(profile?.fullName && profile?.phone && profile?.professionalTitle);
+      const hasWorkAuth = !!(profile?.workAuthorization);
+      const hasLocation = !!(profile?.city && profile?.state && profile?.country);
+      const hasResume = !!(profile?.resumeText);
+      const hasSkills = skills.length > 0;
+      const hasExperience = workExperience.length > 0;
+      const hasEducation = education.length > 0;
+
+      const completionSteps = [
+        { id: 'basic_info', completed: hasBasicInfo, label: 'Basic Information' },
+        { id: 'work_auth', completed: hasWorkAuth, label: 'Work Authorization' },
+        { id: 'location', completed: hasLocation, label: 'Location Details' },
+        { id: 'resume', completed: hasResume, label: 'Resume Upload' },
+        { id: 'skills', completed: hasSkills, label: 'Skills & Expertise' },
+        { id: 'experience', completed: hasExperience, label: 'Work Experience' },
+        { id: 'education', completed: hasEducation, label: 'Education' }
+      ];
+
+      const completedSteps = completionSteps.filter(step => step.completed).length;
+      const profileCompleteness = Math.round((completedSteps / completionSteps.length) * 100);
+      const onboardingCompleted = completedSteps === completionSteps.length;
+
+      // Update profile completion status
+      if (profile) {
+        await storage.upsertUserProfile({
+          userId,
+          profileCompletion: profileCompleteness,
+          onboardingCompleted
+        });
+      }
+
+      res.json({
+        onboardingCompleted,
+        profileCompleteness,
+        completedSteps,
+        totalSteps: completionSteps.length,
+        steps: completionSteps,
+        hasResume,
+        atsScore: profile?.atsScore || null
+      });
+    } catch (error) {
+      console.error("Error fetching onboarding status:", error);
+      res.status(500).json({ message: "Failed to fetch onboarding status" });
+    }
+  });
+
+  // Profile completion helper route for form auto-fill
+  app.get('/api/profile/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user, profile, skills, workExperience, education] = await Promise.all([
+        storage.getUser(userId),
+        storage.getUserProfile(userId),
+        storage.getUserSkills(userId),
+        storage.getUserWorkExperience(userId),
+        storage.getUserEducation(userId)
+      ]);
+
+      // Prepare comprehensive profile data for extension auto-fill
+      const completeProfile = {
+        user: {
+          id: user?.id,
+          email: user?.email,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          profileImageUrl: user?.profileImageUrl
+        },
+        profile: {
+          fullName: profile?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+          phone: profile?.phone,
+          professionalTitle: profile?.professionalTitle,
+          location: profile?.location,
+          currentAddress: profile?.currentAddress,
+          city: profile?.city,
+          state: profile?.state,
+          zipCode: profile?.zipCode,
+          country: profile?.country || 'United States',
+          linkedinUrl: profile?.linkedinUrl,
+          githubUrl: profile?.githubUrl,
+          portfolioUrl: profile?.portfolioUrl,
+          
+          // Personal details for forms
+          dateOfBirth: profile?.dateOfBirth,
+          gender: profile?.gender,
+          nationality: profile?.nationality,
+          
+          // Work authorization
+          workAuthorization: profile?.workAuthorization,
+          visaStatus: profile?.visaStatus,
+          requiresSponsorship: profile?.requiresSponsorship,
+          
+          // Work preferences
+          preferredWorkMode: profile?.preferredWorkMode,
+          desiredSalaryMin: profile?.desiredSalaryMin,
+          desiredSalaryMax: profile?.desiredSalaryMax,
+          noticePeriod: profile?.noticePeriod,
+          willingToRelocate: profile?.willingToRelocate,
+          
+          // Education summary
+          highestDegree: profile?.highestDegree,
+          majorFieldOfStudy: profile?.majorFieldOfStudy,
+          graduationYear: profile?.graduationYear,
+          
+          // Emergency contact
+          emergencyContactName: profile?.emergencyContactName,
+          emergencyContactPhone: profile?.emergencyContactPhone,
+          emergencyContactRelation: profile?.emergencyContactRelation,
+          
+          // Background
+          veteranStatus: profile?.veteranStatus,
+          ethnicity: profile?.ethnicity,
+          disabilityStatus: profile?.disabilityStatus,
+          
+          yearsExperience: profile?.yearsExperience,
+          summary: profile?.summary
+        },
+        skills: skills.map(skill => ({
+          skillName: skill.skillName,
+          proficiencyLevel: skill.proficiencyLevel,
+          yearsExperience: skill.yearsExperience
+        })),
+        workExperience: workExperience.map(exp => ({
+          company: exp.company,
+          position: exp.position,
+          location: exp.location,
+          startDate: exp.startDate,
+          endDate: exp.endDate,
+          isCurrent: exp.isCurrent,
+          description: exp.description
+        })),
+        education: education.map(edu => ({
+          institution: edu.institution,
+          degree: edu.degree,
+          fieldOfStudy: edu.fieldOfStudy,
+          startDate: edu.startDate,
+          endDate: edu.endDate,
+          gpa: edu.gpa
+        }))
+      };
+
+      res.json(completeProfile);
+    } catch (error) {
+      console.error("Error fetching complete profile:", error);
+      res.status(500).json({ message: "Failed to fetch complete profile" });
     }
   });
 
