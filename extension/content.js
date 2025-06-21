@@ -404,7 +404,7 @@
       portfolioUrl: profile?.portfolioUrl || '',
       
       // Additional Information
-      coverLetter: generateCoverLetter(profile, workExperience),
+      coverLetter: profile?.summary || '',
       additionalInfo: profile?.summary || ''
     };
     
