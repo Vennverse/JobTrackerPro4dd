@@ -60,8 +60,8 @@ export class SubscriptionService {
     const subscription = await this.getUserSubscription(userId);
     const usage = await this.getDailyUsage(userId);
     
-    // Pro users have unlimited access
-    if (subscription.isProUser) {
+    // Premium users have unlimited access
+    if (subscription.planType === 'premium') {
       return {
         canUse: true,
         remainingUsage: -1, // unlimited
@@ -129,8 +129,12 @@ export class SubscriptionService {
   async updateUserSubscription(userId: string, subscriptionData: {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+    paypalSubscriptionId?: string;
+    paypalOrderId?: string;
     subscriptionStatus?: string;
     planType?: string;
+    subscriptionStartDate?: Date;
+    subscriptionEndDate?: Date;
   }) {
     await db
       .update(users)

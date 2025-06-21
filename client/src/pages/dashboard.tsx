@@ -67,7 +67,7 @@ export default function Dashboard() {
     );
   }
 
-  const recentApplications = applications?.slice(0, 5) || [];
+  const recentApplications = Array.isArray(applications) ? applications.slice(0, 5) : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -91,7 +91,7 @@ export default function Dashboard() {
       <section className="py-8 sm:py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Stats Cards */}
-          <StatsCards stats={stats} isLoading={statsLoading} />
+          <StatsCards stats={stats as any} isLoading={statsLoading} />
 
           {/* Recent Applications */}
           <Card className="mt-8 sm:mt-12">

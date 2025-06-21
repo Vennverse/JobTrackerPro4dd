@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: any };
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
