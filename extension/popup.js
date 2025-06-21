@@ -1,0 +1,387 @@
+// Popup script for AutoJobr Chrome Extension
+// Handles UI interactions, settings management, and communication with background/content scripts
+
+class AutojobrPopup {
+  constructor() {
+    this.isLoading = false;
+    this.userProfile = null;
+    this.currentAnalysis = null;
+    this.settings = {
+      autofillEnabled: true,
+      apiUrl: 'http://localhost:5000'
+    };
+    
+    this.init();
+  }
+  
+  async init() {
+    await this.loadSettings();
+    await this.loadUserProfile();
+    await this.loadAnalysis();
+    this.bindEvents();
+    this.updateUI();
+  }
+  
+  async loadSettings() {
+    try {
+      const response = await this.sendMessage({ action: 'getSettings' });
+      if (response.success) {
+        this.settings = { ...this.settings, ...response.data };
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  }
+  
+  async loadUserProfile() {
+    try {
+      const response = await this.sendMessage({ action: 'getUserProfile' });
+      if (response.success) {
+        this.userProfile = response.data;
+      } else {
+        this.showProfileError('Please log in to AutoJobr web app first');
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      this.showProfileError('Failed to load profile');
+    }
+  }
+  
+  async loadAnalysis() {
+    try {
+      const settings = await chrome.storage.sync.get(['lastAnalysis']);
+      this.currentAnalysis = settings.lastAnalysis;
+    } catch (error) {
+      console.error('Error loading analysis:', error);
+    }
+  }
+  
+  bindEvents() {
+    // Autofill toggle
+    const autofillToggle = document.getElementById('autofill-toggle');
+    autofillToggle.addEventListener('click', () => this.toggleAutofill());
+    
+    // Refresh analysis button
+    const refreshBtn = document.getElementById('refresh-analysis');
+    refreshBtn.addEventListener('click', () => this.refreshAnalysis());
+    
+    // Fill forms button
+    const fillFormsBtn = document.getElementById('fill-forms');
+    fillFormsBtn.addEventListener('click', () => this.fillForms());
+    
+    // Open dashboard link
+    const dashboardLink = document.getElementById('open-dashboard');
+    dashboardLink.addEventListener('click', () => this.openDashboard());
+  }
+  
+  updateUI() {
+    this.updateConnectionStatus();
+    this.updateAutofillToggle();
+    this.updateProfileSection();
+    this.updateAnalysisSection();
+  }
+  
+  updateConnectionStatus() {
+    const statusEl = document.getElementById('connection-status');
+    const statusDot = document.querySelector('.status-dot');
+    
+    if (this.userProfile) {
+      statusEl.textContent = 'Connected';
+      statusDot.style.background = '#10b981';
+    } else {
+      statusEl.textContent = 'Not logged in';
+      statusDot.style.background = '#ef4444';
+    }
+  }
+  
+  updateAutofillToggle() {
+    const toggle = document.getElementById('autofill-toggle');
+    if (this.settings.autofillEnabled) {
+      toggle.classList.add('active');
+    } else {
+      toggle.classList.remove('active');
+    }
+  }
+  
+  updateProfileSection() {
+    const profileContent = document.getElementById('profile-content');
+    
+    if (!this.userProfile) {
+      profileContent.innerHTML = `
+        <div class="error-state">
+          Please log in to the AutoJobr web app to use the extension.
+        </div>
+        <button class="btn btn-primary" onclick="chrome.tabs.create({url: '${this.settings.apiUrl}'})">
+          Open AutoJobr
+        </button>
+      `;
+      return;
+    }
+    
+    const { user, profile, skills } = this.userProfile;
+    const initials = user?.firstName && user?.lastName 
+      ? `${user.firstName[0]}${user.lastName[0]}` 
+      : 'U';
+    
+    profileContent.innerHTML = `
+      <div class="profile-card">
+        <div class="profile-info">
+          <div class="profile-avatar">
+            ${user?.profileImageUrl ? 
+              `<img src="${user.profileImageUrl}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
+              initials
+            }
+          </div>
+          <div class="profile-details">
+            <h3>${user?.firstName || ''} ${user?.lastName || ''}</h3>
+            <p>${profile?.professionalTitle || user?.email || 'No title set'}</p>
+          </div>
+        </div>
+        ${skills && skills.length > 0 ? `
+          <div class="skills-list">
+            ${skills.slice(0, 5).map(skill => `
+              <span class="skill-tag">${skill.skillName}</span>
+            `).join('')}
+            ${skills.length > 5 ? `<span class="skill-tag">+${skills.length - 5} more</span>` : ''}
+          </div>
+        ` : '<p style="font-size: 12px; color: #6b7280; margin-top: 8px;">No skills added yet</p>'}
+      </div>
+    `;
+  }
+  
+  updateAnalysisSection() {
+    const analysisContent = document.getElementById('analysis-content');
+    
+    if (!this.currentAnalysis) {
+      analysisContent.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <p>Navigate to a job posting to see analysis</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const analysis = this.currentAnalysis;
+    const matchScoreClass = this.getMatchScoreClass(analysis.matchScore);
+    const progressColor = this.getProgressColor(analysis.matchScore);
+    
+    analysisContent.innerHTML = `
+      <div class="analysis-card">
+        <div class="match-score">
+          <span class="match-score-label">Match Score</span>
+          <span class="match-score-value ${matchScoreClass}">${analysis.matchScore}%</span>
+        </div>
+        
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${analysis.matchScore}%; background: ${progressColor};"></div>
+        </div>
+        
+        <div class="analysis-details">
+          <div class="analysis-item">
+            <div class="analysis-item-label">Seniority</div>
+            <div class="analysis-item-value">${analysis.detectedSeniority}</div>
+          </div>
+          <div class="analysis-item">
+            <div class="analysis-item-label">Work Mode</div>
+            <div class="analysis-item-value">${analysis.workMode}</div>
+          </div>
+        </div>
+        
+        ${analysis.matchingSkills && analysis.matchingSkills.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Matching Skills</div>
+            <div class="skills-list">
+              ${analysis.matchingSkills.slice(0, 4).map(skill => `
+                <span class="skill-tag" style="background: #dcfce7; color: #166534;">${skill}</span>
+              `).join('')}
+              ${analysis.matchingSkills.length > 4 ? `
+                <span class="skill-tag" style="background: #f3f4f6; color: #6b7280;">+${analysis.matchingSkills.length - 4}</span>
+              ` : ''}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${analysis.missingSkills && analysis.missingSkills.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Missing Skills</div>
+            <div class="skills-list">
+              ${analysis.missingSkills.slice(0, 4).map(skill => `
+                <span class="skill-tag" style="background: #fef3c7; color: #d97706;">${skill}</span>
+              `).join('')}
+              ${analysis.missingSkills.length > 4 ? `
+                <span class="skill-tag" style="background: #f3f4f6; color: #6b7280;">+${analysis.missingSkills.length - 4}</span>
+              ` : ''}
+            </div>
+          </div>
+        ` : ''}
+        
+        <div style="font-size: 11px; color: #9ca3af; text-align: center;">
+          ${analysis.jobTitle ? `For: ${analysis.jobTitle}` : ''}
+          ${analysis.company ? ` at ${analysis.company}` : ''}
+        </div>
+      </div>
+    `;
+  }
+  
+  getMatchScoreClass(score) {
+    if (score >= 80) return 'excellent';
+    if (score >= 60) return 'good';
+    if (score >= 40) return 'fair';
+    return 'poor';
+  }
+  
+  getProgressColor(score) {
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#3b82f6';
+    if (score >= 40) return '#f59e0b';
+    return '#ef4444';
+  }
+  
+  showProfileError(message) {
+    const profileContent = document.getElementById('profile-content');
+    profileContent.innerHTML = `
+      <div class="error-state">
+        ${message}
+      </div>
+    `;
+  }
+  
+  async toggleAutofill() {
+    const newState = !this.settings.autofillEnabled;
+    
+    try {
+      await this.sendMessage({
+        action: 'updateSettings',
+        data: { autofillEnabled: newState }
+      });
+      
+      this.settings.autofillEnabled = newState;
+      this.updateAutofillToggle();
+      
+      // Notify content script
+      await this.sendMessageToActiveTab({
+        action: 'toggleAutofill',
+        enabled: newState
+      });
+      
+      this.showNotification(`Autofill ${newState ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Error toggling autofill:', error);
+      this.showNotification('Failed to update settings', 'error');
+    }
+  }
+  
+  async refreshAnalysis() {
+    if (this.isLoading) return;
+    
+    this.isLoading = true;
+    const refreshBtn = document.getElementById('refresh-analysis');
+    const refreshText = document.getElementById('refresh-text');
+    const refreshLoading = document.getElementById('refresh-loading');
+    
+    refreshText.style.display = 'none';
+    refreshLoading.style.display = 'inline-block';
+    refreshBtn.disabled = true;
+    
+    try {
+      await this.sendMessageToActiveTab({ action: 'refreshAnalysis' });
+      
+      // Wait a bit and reload analysis
+      setTimeout(async () => {
+        await this.loadAnalysis();
+        this.updateAnalysisSection();
+        this.showNotification('Analysis refreshed');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error refreshing analysis:', error);
+      this.showNotification('Failed to refresh analysis', 'error');
+    } finally {
+      setTimeout(() => {
+        this.isLoading = false;
+        refreshText.style.display = 'inline';
+        refreshLoading.style.display = 'none';
+        refreshBtn.disabled = false;
+      }, 2000);
+    }
+  }
+  
+  async fillForms() {
+    if (!this.userProfile) {
+      this.showNotification('Please log in first', 'error');
+      return;
+    }
+    
+    try {
+      await this.sendMessageToActiveTab({ action: 'fillForms' });
+      this.showNotification('Forms filled with your profile data');
+    } catch (error) {
+      console.error('Error filling forms:', error);
+      this.showNotification('Failed to fill forms', 'error');
+    }
+  }
+  
+  openDashboard() {
+    chrome.tabs.create({ url: this.settings.apiUrl });
+  }
+  
+  async sendMessage(message) {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(message, resolve);
+    });
+  }
+  
+  async sendMessageToActiveTab(message) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return new Promise((resolve) => {
+      chrome.tabs.sendMessage(tab.id, message, resolve);
+    });
+  }
+  
+  showNotification(message, type = 'info') {
+    // Create temporary notification in popup
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      background: ${type === 'error' ? '#ef4444' : '#10b981'};
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      z-index: 1000;
+      text-align: center;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 2000);
+  }
+  
+  // Listen for storage changes to update UI
+  onStorageChange() {
+    chrome.storage.onChanged.addListener(async (changes) => {
+      if (changes.lastAnalysis) {
+        this.currentAnalysis = changes.lastAnalysis.newValue;
+        this.updateAnalysisSection();
+      }
+      
+      if (changes.userProfile) {
+        this.userProfile = changes.userProfile.newValue;
+        this.updateProfileSection();
+        this.updateConnectionStatus();
+      }
+    });
+  }
+}
+
+// Initialize popup when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  new AutojobrPopup();
+});
