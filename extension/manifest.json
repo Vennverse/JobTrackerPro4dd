@@ -23,7 +23,8 @@
     "https://*.jobvite.com/*",
     "https://*.smartrecruiters.com/*",
     "http://localhost:*/*",
-    "https://*.replit.app/*"
+    "https://*.replit.app/*",
+    "https://*.replit.dev/*"
   ],
   "background": {
     "service_worker": "background.js"

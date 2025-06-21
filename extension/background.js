@@ -2,12 +2,34 @@
 // Handles extension lifecycle, storage, and communication between components
 
 // Extension installation and update handling
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     console.log('AutoJobr extension installed');
-    // Set default settings
-    // Use the current deployment URL
-    const apiUrl = 'https://60e68a76-86c4-4eef-b2f5-8a97de774d09-00-f9a0u7nh8k0p.kirk.replit.dev';
+    
+    // Try to auto-detect the correct API URL
+    let apiUrl = 'http://localhost:5000'; // Default fallback
+    
+    // Check for common AutoJobr deployment patterns
+    const possibleUrls = [
+      'https://autojobr-ai-powered-job-application-platform.replit.app',
+      'https://autojobr.replit.app',
+      window.location?.origin // If installed from the web app itself
+    ];
+    
+    for (const url of possibleUrls) {
+      if (url) {
+        try {
+          const response = await fetch(`${url}/api/auth/user`, { 
+            method: 'HEAD',
+            mode: 'no-cors'
+          });
+          apiUrl = url;
+          break;
+        } catch (e) {
+          continue;
+        }
+      }
+    }
     
     chrome.storage.sync.set({
       autofillEnabled: true,
@@ -15,6 +37,8 @@ chrome.runtime.onInstalled.addListener((details) => {
       lastAnalysis: null,
       userProfile: null
     });
+    
+    console.log('AutoJobr configured with API URL:', apiUrl);
   }
 });
 
@@ -50,41 +74,74 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function getUserProfile(sendResponse) {
   try {
     const { apiUrl } = await chrome.storage.sync.get(['apiUrl']);
-    const response = await fetch(`${apiUrl}/api/auth/user`, {
-      credentials: 'include'
+    
+    // First check authentication
+    const authResponse = await fetch(`${apiUrl}/api/auth/user`, {
+      method: 'GET',
+      credentials: 'include',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
     
-    if (response.ok) {
-      const user = await response.json();
-      
-      // Also get profile data
-      const profileResponse = await fetch(`${apiUrl}/api/profile`, {
-        credentials: 'include'
-      });
-      
-      const skillsResponse = await fetch(`${apiUrl}/api/skills`, {
-        credentials: 'include'
-      });
-      
-      const profile = profileResponse.ok ? await profileResponse.json() : null;
-      const skills = skillsResponse.ok ? await skillsResponse.json() : [];
-      
-      const userProfile = {
-        user,
-        profile,
-        skills
-      };
-      
-      // Cache profile data
-      await chrome.storage.sync.set({ userProfile });
-      
-      sendResponse({ success: true, data: userProfile });
-    } else {
-      sendResponse({ success: false, error: 'Not authenticated' });
+    if (!authResponse.ok) {
+      sendResponse({ success: false, error: 'Please log in to AutoJobr web app first' });
+      return;
     }
+    
+    const user = await authResponse.json();
+    
+    // Get profile data
+    let profile = null;
+    let skills = [];
+    
+    try {
+      const profileResponse = await fetch(`${apiUrl}/api/profile`, {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      if (profileResponse.ok) {
+        profile = await profileResponse.json();
+      }
+    } catch (e) {
+      console.log('Profile not found, using basic user data');
+    }
+    
+    try {
+      const skillsResponse = await fetch(`${apiUrl}/api/skills`, {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      if (skillsResponse.ok) {
+        skills = await skillsResponse.json();
+      }
+    } catch (e) {
+      console.log('Skills not found');
+    }
+    
+    const userProfile = {
+      user,
+      profile,
+      skills
+    };
+    
+    // Cache profile data
+    await chrome.storage.sync.set({ userProfile });
+    
+    sendResponse({ success: true, data: userProfile });
+    
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    sendResponse({ success: false, error: error.message });
+    sendResponse({ success: false, error: 'Connection failed. Please ensure you are logged in to AutoJobr.' });
   }
 }
 
