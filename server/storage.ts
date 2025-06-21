@@ -77,6 +77,14 @@ export interface IStorage {
   addJobAnalysis(analysis: InsertAiJobAnalysis): Promise<AiJobAnalysis>;
   getJobAnalysisByUrl(userId: string, jobUrl: string): Promise<AiJobAnalysis | undefined>;
   updateJobAnalysis(id: number, analysis: Partial<InsertAiJobAnalysis>): Promise<AiJobAnalysis>;
+  
+  // Subscription operations
+  updateUserSubscription(userId: string, subscriptionData: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    planType?: string;
+  }): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -336,6 +344,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(aiJobAnalyses.id, id))
       .returning();
     return updatedAnalysis;
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    planType?: string;
+  }): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        ...subscriptionData,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 }
 

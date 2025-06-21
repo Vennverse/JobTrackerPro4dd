@@ -7,6 +7,7 @@ import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { groqService } from "./groqService";
+import { subscriptionService } from "./subscriptionService";
 import { 
   insertUserProfileSchema,
   insertUserSkillSchema,
@@ -17,6 +18,39 @@ import {
   insertAiJobAnalysisSchema 
 } from "@shared/schema";
 import { z } from "zod";
+
+// Middleware to check usage limits
+const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFillUsage') => {
+  return async (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userId = req.user.claims.sub;
+    const usage = await subscriptionService.canUseFeature(userId, feature);
+
+    if (!usage.canUse) {
+      return res.status(429).json({
+        message: "Daily usage limit reached",
+        upgradeRequired: usage.upgradeRequired,
+        resetTime: usage.resetTime,
+        feature,
+        remainingUsage: usage.remainingUsage,
+      });
+    }
+
+    // Add usage info to request for tracking
+    req.usageInfo = { feature, userId };
+    next();
+  };
+};
+
+// Helper function to track usage after successful operations
+const trackUsage = async (req: any) => {
+  if (req.usageInfo) {
+    await subscriptionService.incrementUsage(req.usageInfo.userId, req.usageInfo.feature);
+  }
+};
 
 // Configure multer for file uploads
 const upload = multer({
