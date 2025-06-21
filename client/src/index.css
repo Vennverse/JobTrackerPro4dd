@@ -93,7 +93,8 @@
 }
 
 .skill-tag {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary;
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-primary;
+  background-color: hsl(var(--primary) / 0.1);
 }
 
 .status-applied {
