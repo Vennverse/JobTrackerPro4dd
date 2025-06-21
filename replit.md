@@ -2,7 +2,7 @@
 
 ## Overview
 
-AutoJobr is a full-stack web application that automates job applications, tracks application progress, and provides AI-powered job recommendations. The platform helps job seekers streamline their application process by providing intelligent matching, automated application tracking, and comprehensive profile management.
+AutoJobr is a comprehensive job application automation platform consisting of a full-stack web application and Chrome extension. The platform automates job applications, tracks application progress, provides AI-powered job recommendations, and offers real-time form filling across major job boards. The system helps job seekers streamline their entire application process through intelligent matching, automated application tracking, comprehensive profile management, and seamless browser integration.
 
 ## System Architecture
 
@@ -16,21 +16,20 @@ The application follows a modern full-stack architecture with clear separation b
 
 ## Key Components
 
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **State Management**: TanStack Query for server state management
-- **Routing**: Wouter for lightweight client-side routing
-- **UI Components**: Radix UI primitives with shadcn/ui component library
-- **Styling**: Tailwind CSS with CSS variables for theming
-- **Build Tool**: Vite with React plugin and development optimizations
+### Web Application Architecture
+- **Frontend**: React 18 with TypeScript, TanStack Query state management
+- **Backend**: Node.js Express server with TypeScript and RESTful APIs
+- **Database**: PostgreSQL with Drizzle ORM for type-safe operations
+- **Authentication**: Replit Auth with OpenID Connect and session management
+- **UI Framework**: Radix UI primitives with shadcn/ui and Tailwind CSS
+- **Build System**: Vite for fast development and optimized production builds
 
-### Backend Architecture
-- **Runtime**: Node.js with Express.js framework
-- **Language**: TypeScript with ES modules
-- **API Pattern**: RESTful API design
-- **Database Access**: Drizzle ORM with Neon serverless PostgreSQL
-- **Session Management**: Express sessions with PostgreSQL store
-- **Authentication**: Passport.js with OpenID Connect strategy
+### Chrome Extension Architecture
+- **Manifest V3**: Modern Chrome extension with service worker background script
+- **Content Scripts**: Intelligent form detection and auto-filling across major ATS platforms
+- **Job Analysis**: In-browser NLP processing using lightweight compromise.js library
+- **Real-time Sync**: Seamless integration with web app backend for profile data and application tracking
+- **Cross-Platform Support**: Works on Workday, Greenhouse, Lever, iCIMS, LinkedIn, and 10+ other job boards
 
 ### Database Schema
 The application uses a comprehensive schema supporting:

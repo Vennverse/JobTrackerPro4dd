@@ -47,7 +47,7 @@ export default function Landing() {
                 <Rocket className="w-4 h-4 mr-2" />
                 Get Started Free
               </Button>
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" onClick={() => window.open('/extension/README.md', '_blank')}>
                 <Chrome className="w-4 h-4 mr-2" />
                 Install Extension
               </Button>
@@ -185,6 +185,91 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Chrome Extension Section */}
+      <section className="py-16 bg-gradient-to-r from-purple-600 to-blue-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-white">
+              <div className="flex items-center mb-4">
+                <Chrome className="w-8 h-8 mr-3" />
+                <span className="text-sm font-semibold uppercase tracking-wide">Chrome Extension</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Auto-Fill Any Job Application in Seconds
+              </h2>
+              <p className="text-xl text-white/90 mb-8">
+                Our Chrome extension works seamlessly with Workday, Greenhouse, LinkedIn, and 15+ other job boards. Get real-time job matching scores and automatic form filling.
+              </p>
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                  <span>Auto-fills forms on 15+ major job boards</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                  <span>Real-time job match analysis with AI</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                  <span>Automatic application tracking</span>
+                </div>
+              </div>
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-white text-purple-600 hover:bg-white/90"
+                onClick={() => window.open('/extension/README.md', '_blank')}
+              >
+                <Chrome className="w-4 h-4 mr-2" />
+                Install Extension
+              </Button>
+            </div>
+            <div className="relative">
+              <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20">
+                <div className="bg-white rounded-lg p-6 shadow-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
+                        <Rocket className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="font-semibold text-gray-900">AutoJobr Assistant</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      Connected
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-600">Match Score</span>
+                        <span className="text-lg font-bold text-green-600">92%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{width: "92%"}}></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Seniority</span>
+                        <div className="font-medium">Senior</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Work Mode</span>
+                        <div className="font-medium">Remote</div>
+                      </div>
+                    </div>
+                    <Button size="sm" className="w-full">
+                      Fill Application Forms
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-primary">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -194,15 +279,26 @@ export default function Landing() {
           <p className="text-xl text-primary-foreground/80 mb-8">
             Join thousands of professionals who are landing jobs faster with AutoJobr
           </p>
-          <Button
-            size="lg"
-            variant="secondary"
-            onClick={handleLogin}
-            className="bg-white text-primary hover:bg-white/90"
-          >
-            <Rocket className="w-4 h-4 mr-2" />
-            Get Started Free Today
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              size="lg"
+              variant="secondary"
+              onClick={handleLogin}
+              className="bg-white text-primary hover:bg-white/90"
+            >
+              <Rocket className="w-4 h-4 mr-2" />
+              Get Started Free Today
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-primary"
+              onClick={() => window.open('/extension/README.md', '_blank')}
+            >
+              <Chrome className="w-4 h-4 mr-2" />
+              Install Extension
+            </Button>
+          </div>
         </div>
       </section>
 

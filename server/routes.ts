@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
+import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
@@ -165,6 +167,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching application stats:", error);
       res.status(500).json({ message: "Failed to fetch application stats" });
+    }
+  });
+
+  // Chrome Extension download route
+  app.get('/extension/*', (req, res) => {
+    const filePath = req.path.replace('/extension/', '');
+    const extensionPath = path.join(process.cwd(), 'extension', filePath);
+    
+    if (fs.existsSync(extensionPath)) {
+      res.sendFile(extensionPath);
+    } else {
+      res.status(404).json({ message: 'File not found' });
     }
   });
 
