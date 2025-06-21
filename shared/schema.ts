@@ -34,6 +34,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status").default("free"), // free, active, canceled, past_due
+  planType: varchar("plan_type").default("free"), // free, pro
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -246,6 +250,21 @@ export const aiJobAnalyses = pgTable("ai_job_analyses", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Daily usage tracking table for premium limits
+export const dailyUsage = pgTable("daily_usage", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  date: varchar("date").notNull(), // YYYY-MM-DD format
+  jobAnalysesCount: integer("job_analyses_count").default(0),
+  resumeAnalysesCount: integer("resume_analyses_count").default(0),
+  applicationsCount: integer("applications_count").default(0),
+  autoFillUsageCount: integer("auto_fill_usage_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("daily_usage_user_date_idx").on(table.userId, table.date),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -258,6 +277,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   applications: many(jobApplications),
   recommendations: many(jobRecommendations),
   aiJobAnalyses: many(aiJobAnalyses),
+  dailyUsage: many(dailyUsage),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -305,6 +325,13 @@ export const jobRecommendationsRelations = relations(jobRecommendations, ({ one 
 export const aiJobAnalysesRelations = relations(aiJobAnalyses, ({ one }) => ({
   user: one(users, {
     fields: [aiJobAnalyses.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dailyUsageRelations = relations(dailyUsage, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyUsage.userId],
     references: [users.id],
   }),
 }));
@@ -365,3 +392,12 @@ export type InsertJobRecommendation = z.infer<typeof insertJobRecommendationSche
 export type JobRecommendation = typeof jobRecommendations.$inferSelect;
 export type InsertAiJobAnalysis = z.infer<typeof insertAiJobAnalysisSchema>;
 export type AiJobAnalysis = typeof aiJobAnalyses.$inferSelect;
+
+export const insertDailyUsageSchema = createInsertSchema(dailyUsage).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
+export type DailyUsage = typeof dailyUsage.$inferSelect;
