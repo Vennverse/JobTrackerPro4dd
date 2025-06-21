@@ -8,6 +8,7 @@ import {
   serial,
   integer,
   boolean,
+  date,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -37,21 +38,83 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// User profiles with additional job search information
+// User profiles with comprehensive onboarding information
 export const userProfiles = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id).notNull(),
+  
+  // Basic Information
+  fullName: varchar("full_name"),
   phone: varchar("phone"),
   professionalTitle: varchar("professional_title"),
   location: varchar("location"),
   linkedinUrl: varchar("linkedin_url"),
   githubUrl: varchar("github_url"),
   portfolioUrl: varchar("portfolio_url"),
+  
+  // Personal Details (commonly asked in forms)
+  dateOfBirth: varchar("date_of_birth"),
+  gender: varchar("gender"),
+  nationality: varchar("nationality"),
+  
+  // Work Authorization
+  workAuthorization: varchar("work_authorization"), // "citizen", "permanent_resident", "visa_required"
+  visaStatus: varchar("visa_status"),
+  requiresSponsorship: boolean("requires_sponsorship").default(false),
+  
+  // Location Preferences
+  currentAddress: text("current_address"),
+  city: varchar("city"),
+  state: varchar("state"),
+  zipCode: varchar("zip_code"),
+  country: varchar("country").default("United States"),
+  willingToRelocate: boolean("willing_to_relocate").default(false),
+  
+  // Work Preferences
+  preferredWorkMode: varchar("preferred_work_mode"), // "remote", "hybrid", "onsite"
+  desiredSalaryMin: integer("desired_salary_min"),
+  desiredSalaryMax: integer("desired_salary_max"),
+  salaryCurrency: varchar("salary_currency").default("USD"),
+  noticePeriod: varchar("notice_period"), // "immediate", "2_weeks", "1_month", "2_months"
+  
+  // Education Summary (for quick form filling)  
+  highestDegree: varchar("highest_degree"),
+  majorFieldOfStudy: varchar("major_field_of_study"),
+  graduationYear: integer("graduation_year"),
+  
+  // Resume and Professional Summary
   resumeUrl: varchar("resume_url"),
   resumeText: text("resume_text"),
+  resumeFileName: varchar("resume_file_name"),
   summary: text("summary"),
   yearsExperience: integer("years_experience"),
+  
+  // ATS Analysis Results
+  atsScore: integer("ats_score"),
+  atsAnalysis: jsonb("ats_analysis"),
+  atsRecommendations: text("ats_recommendations").array(),
+  
+  // Emergency Contact (sometimes required)
+  emergencyContactName: varchar("emergency_contact_name"),
+  emergencyContactPhone: varchar("emergency_contact_phone"),
+  emergencyContactRelation: varchar("emergency_contact_relation"),
+  
+  // Military/Veteran Status (common question)
+  veteranStatus: varchar("veteran_status"), // "not_veteran", "veteran", "disabled_veteran"
+  
+  // Diversity Questions (optional but commonly asked)
+  ethnicity: varchar("ethnicity"),
+  disabilityStatus: varchar("disability_status"),
+  
+  // Background Check Consent
+  backgroundCheckConsent: boolean("background_check_consent").default(false),
+  drugTestConsent: boolean("drug_test_consent").default(false),
+  
+  // Profile Status
+  onboardingCompleted: boolean("onboarding_completed").default(false),
   profileCompletion: integer("profile_completion").default(0),
+  lastResumeAnalysis: timestamp("last_resume_analysis"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -139,6 +202,50 @@ export const jobRecommendations = pgTable("job_recommendations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// AI Job Analysis - stores detailed AI analysis of job postings
+export const aiJobAnalyses = pgTable("ai_job_analyses", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  jobUrl: varchar("job_url").notNull(),
+  jobTitle: varchar("job_title").notNull(),
+  company: varchar("company").notNull(),
+  
+  // Raw job data
+  jobDescription: text("job_description"),
+  requirements: text("requirements"),
+  qualifications: text("qualifications"),
+  benefits: text("benefits"),
+  
+  // AI Analysis Results
+  matchScore: integer("match_score"), // 0-100
+  matchingSkills: text("matching_skills").array(),
+  missingSkills: text("missing_skills").array(),
+  skillGaps: jsonb("skill_gaps"), // detailed analysis of missing skills
+  
+  // Job characteristics extracted by AI
+  seniorityLevel: varchar("seniority_level"), // entry, mid, senior, lead, principal
+  workMode: varchar("work_mode"), // remote, hybrid, onsite
+  jobType: varchar("job_type"), // full-time, part-time, contract, internship
+  salaryRange: varchar("salary_range"),
+  location: varchar("location"),
+  
+  // AI-generated insights
+  roleComplexity: varchar("role_complexity"), // low, medium, high
+  careerProgression: varchar("career_progression"), // lateral, step-up, stretch
+  industryFit: varchar("industry_fit"), // perfect, good, acceptable, poor
+  cultureFit: varchar("culture_fit"), // strong, moderate, weak
+  
+  // Recommendations
+  applicationRecommendation: varchar("application_recommendation"), // strongly_recommended, recommended, consider, not_recommended
+  tailoringAdvice: text("tailoring_advice"), // AI advice on how to tailor application
+  interviewPrepTips: text("interview_prep_tips"),
+  
+  // Metadata
+  analysisVersion: varchar("analysis_version").default("1.0"),
+  processingTime: integer("processing_time"), // milliseconds
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -150,6 +257,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   education: many(education),
   applications: many(jobApplications),
   recommendations: many(jobRecommendations),
+  aiJobAnalyses: many(aiJobAnalyses),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -194,6 +302,13 @@ export const jobRecommendationsRelations = relations(jobRecommendations, ({ one 
   }),
 }));
 
+export const aiJobAnalysesRelations = relations(aiJobAnalyses, ({ one }) => ({
+  user: one(users, {
+    fields: [aiJobAnalyses.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   id: true,
@@ -228,6 +343,11 @@ export const insertJobRecommendationSchema = createInsertSchema(jobRecommendatio
   createdAt: true,
 });
 
+export const insertAiJobAnalysisSchema = createInsertSchema(aiJobAnalyses).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -243,3 +363,5 @@ export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type JobApplication = typeof jobApplications.$inferSelect;
 export type InsertJobRecommendation = z.infer<typeof insertJobRecommendationSchema>;
 export type JobRecommendation = typeof jobRecommendations.$inferSelect;
+export type InsertAiJobAnalysis = z.infer<typeof insertAiJobAnalysisSchema>;
+export type AiJobAnalysis = typeof aiJobAnalyses.$inferSelect;
