@@ -86,33 +86,33 @@ export function JobCard({ job }: JobCardProps) {
 
   return (
     <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Building className="w-6 h-6 text-primary" />
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between mb-3 sm:mb-4">
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Building className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground">{job.company}</h3>
-              <p className="text-sm text-muted-foreground flex items-center">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{job.company}</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground flex items-center">
                 {job.location && (
                   <>
-                    <MapPin className="w-3 h-3 mr-1" />
-                    {job.location}
+                    <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">{job.location}</span>
                   </>
                 )}
               </p>
             </div>
           </div>
           <div className={cn(
-            "text-sm font-semibold px-2 py-1 rounded",
+            "text-xs sm:text-sm font-semibold px-2 py-1 rounded whitespace-nowrap ml-2",
             getMatchScoreColor(job.matchScore)
           )}>
             {getMatchScoreText(job.matchScore)}
           </div>
         </div>
         
-        <h4 className="text-lg font-semibold text-foreground mb-2">
+        <h4 className="text-base sm:text-lg font-semibold text-foreground mb-2">
           {job.jobTitle}
         </h4>
         
@@ -178,25 +178,28 @@ export function JobCard({ job }: JobCardProps) {
         
         <div className="flex space-x-2">
           <Button 
-            className="flex-1" 
+            className="flex-1 text-sm sm:text-base" 
             onClick={handleApply}
             disabled={job.isApplied}
+            size="sm"
           >
             {job.isApplied ? (
               <>
-                <Clock className="w-4 h-4 mr-2" />
-                Applied
+                <Clock className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Applied</span>
+                <span className="sm:hidden">Done</span>
               </>
             ) : (
               <>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Apply Now
+                <ExternalLink className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Apply Now</span>
+                <span className="sm:hidden">Apply</span>
               </>
             )}
           </Button>
           <Button
             variant="outline"
-            size="icon"
+            size="sm"
             onClick={handleBookmark}
             disabled={bookmarkMutation.isPending}
             className={cn(

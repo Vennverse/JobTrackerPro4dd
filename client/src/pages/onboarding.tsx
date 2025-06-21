@@ -226,11 +226,11 @@ export default function Onboarding() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-2xl mx-auto">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-48 sm:h-64 bg-gray-200 rounded"></div>
           </div>
         </div>
       </div>
@@ -659,17 +659,19 @@ export default function Onboarding() {
         </Card>
 
         {/* Navigation */}
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between">
           <Button
             variant="outline"
             onClick={handlePrevious}
             disabled={currentStep === 0}
+            className="w-full sm:w-auto"
           >
             Previous
           </Button>
           <Button
             onClick={handleNext}
             disabled={profileMutation.isPending}
+            className="w-full sm:w-auto"
           >
             {profileMutation.isPending ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
