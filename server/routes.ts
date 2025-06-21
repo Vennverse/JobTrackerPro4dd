@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-const pdfParse = require("pdf-parse");
+// Dynamic import for pdf-parse to avoid startup issues
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { groqService } from "./groqService";
@@ -268,7 +268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract text from PDF
       if (req.file.mimetype === 'application/pdf') {
         try {
-          const pdfData = await pdfParse(req.file.buffer);
+          const pdfParseModule = await import('pdf-parse');
+          const pdfData = await pdfParseModule.default(req.file.buffer);
           resumeText = pdfData.text;
         } catch (error) {
           console.error("Error parsing PDF:", error);
