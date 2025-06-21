@@ -6,6 +6,7 @@ import {
   education,
   jobApplications,
   jobRecommendations,
+  aiJobAnalyses,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -20,6 +21,8 @@ import {
   type InsertJobApplication,
   type JobRecommendation,
   type InsertJobRecommendation,
+  type AiJobAnalysis,
+  type InsertAiJobAnalysis,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -68,6 +71,12 @@ export interface IStorage {
   addJobRecommendation(recommendation: InsertJobRecommendation): Promise<JobRecommendation>;
   updateJobRecommendation(id: number, recommendation: Partial<InsertJobRecommendation>): Promise<JobRecommendation>;
   toggleBookmark(id: number): Promise<JobRecommendation>;
+  
+  // AI Job Analysis operations
+  getUserJobAnalyses(userId: string): Promise<AiJobAnalysis[]>;
+  addJobAnalysis(analysis: InsertAiJobAnalysis): Promise<AiJobAnalysis>;
+  getJobAnalysisByUrl(userId: string, jobUrl: string): Promise<AiJobAnalysis | undefined>;
+  updateJobAnalysis(id: number, analysis: Partial<InsertAiJobAnalysis>): Promise<AiJobAnalysis>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -292,6 +301,41 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updated;
+  }
+
+  // AI Job Analysis operations
+  async getUserJobAnalyses(userId: string): Promise<AiJobAnalysis[]> {
+    return await db
+      .select()
+      .from(aiJobAnalyses)
+      .where(eq(aiJobAnalyses.userId, userId))
+      .orderBy(desc(aiJobAnalyses.createdAt));
+  }
+
+  async addJobAnalysis(analysis: InsertAiJobAnalysis): Promise<AiJobAnalysis> {
+    const [newAnalysis] = await db
+      .insert(aiJobAnalyses)
+      .values(analysis)
+      .returning();
+    return newAnalysis;
+  }
+
+  async getJobAnalysisByUrl(userId: string, jobUrl: string): Promise<AiJobAnalysis | undefined> {
+    const [analysis] = await db
+      .select()
+      .from(aiJobAnalyses)
+      .where(and(eq(aiJobAnalyses.userId, userId), eq(aiJobAnalyses.jobUrl, jobUrl)))
+      .orderBy(desc(aiJobAnalyses.createdAt));
+    return analysis;
+  }
+
+  async updateJobAnalysis(id: number, analysisData: Partial<InsertAiJobAnalysis>): Promise<AiJobAnalysis> {
+    const [updatedAnalysis] = await db
+      .update(aiJobAnalyses)
+      .set(analysisData)
+      .where(eq(aiJobAnalyses.id, id))
+      .returning();
+    return updatedAnalysis;
   }
 }
 
