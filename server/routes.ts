@@ -20,14 +20,14 @@ import {
 import { z } from "zod";
 
 // Middleware to check usage limits
-const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFillUsage') => {
+const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFills') => {
   return async (req: any, res: any, next: any) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     const userId = req.user.claims.sub;
-    const usage = await subscriptionService.canUseFeature(userId, feature);
+    const usage = await subscriptionService.canUseFeature(userId, feature as keyof typeof USAGE_LIMITS.free);
 
     if (!usage.canUse) {
       return res.status(429).json({
@@ -709,8 +709,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await subscriptionService.updateUserSubscription(userId, {
         planType: 'free',
         subscriptionStatus: 'canceled',
-        paypalSubscriptionId: null as string | null,
-        paypalOrderId: null as string | null,
+        paypalSubscriptionId: undefined,
+        paypalOrderId: undefined,
         subscriptionEndDate: new Date()
       });
 
