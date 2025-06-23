@@ -724,6 +724,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-fill usage tracking route
+  app.post('/api/usage/autofill', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { site, fieldsCount } = req.body;
+      
+      // Check if user can use auto-fill feature
+      const canUse = await subscriptionService.canUseFeature(userId, 'autoFills');
+      
+      if (!canUse.canUse) {
+        return res.status(429).json({ 
+          message: canUse.upgradeRequired ? 
+            'Daily auto-fill limit reached. Upgrade to premium for unlimited auto-fills.' :
+            'Auto-fill feature not available',
+          upgradeRequired: canUse.upgradeRequired,
+          resetTime: canUse.resetTime
+        });
+      }
+      
+      // Track the usage
+      await subscriptionService.incrementUsage(userId, 'autoFills');
+      
+      res.json({ 
+        success: true, 
+        remainingUsage: canUse.remainingUsage - 1,
+        site,
+        fieldsCount 
+      });
+    } catch (error) {
+      console.error("Error tracking auto-fill usage:", error);
+      res.status(500).json({ message: "Failed to track auto-fill usage" });
+    }
+  });
+
   // PayPal Webhook for subscription events
   app.post('/api/webhook/paypal', async (req, res) => {
     try {

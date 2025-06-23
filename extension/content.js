@@ -685,6 +685,20 @@
       }
 
       showSuccessNotification(count) {
+        // Track auto-fill usage with backend
+        chrome.runtime.sendMessage({
+          action: 'trackAutoFill',
+          data: {
+            site: window.location.hostname,
+            fieldsCount: count
+          }
+        }, (response) => {
+          if (response && !response.success && response.upgradeRequired) {
+            this.showUpgradeNotification(response.error);
+            return;
+          }
+        });
+
         const notification = document.createElement('div');
         notification.innerHTML = `
           <div style="
@@ -724,6 +738,58 @@
           notification.style.animation = 'slideIn 0.3s ease-out reverse';
           setTimeout(() => notification.remove(), 300);
         }, 3000);
+      }
+
+      showUpgradeNotification(message) {
+        const notification = document.createElement('div');
+        notification.innerHTML = `
+          <div style="
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #F59E0B;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 320px;
+            animation: slideIn 0.3s ease-out;
+            cursor: pointer;
+          ">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              <strong>Upgrade Required</strong>
+            </div>
+            <div style="margin-bottom: 12px;">${message}</div>
+            <div style="text-align: center;">
+              <button onclick="this.closest('div').remove(); window.open('${window.location.origin}/subscription', '_blank');" 
+                      style="background: white; color: #F59E0B; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 500; cursor: pointer;">
+                Upgrade Now
+              </button>
+            </div>
+          </div>
+          <style>
+            @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+          </style>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.style.animation = 'slideIn 0.3s ease-out reverse';
+            setTimeout(() => notification.remove(), 300);
+          }
+        }, 8000);
       }
     }
     

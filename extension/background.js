@@ -155,6 +155,28 @@ async function handleJobAnalysis(jobData, sendResponse) {
       return;
     }
 
+    // Check usage limits first for premium subscription model
+    const usageCheck = await fetch(`${apiUrl}/api/subscription/status`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    
+    if (usageCheck.ok) {
+      const usageData = await usageCheck.json();
+      const remainingAnalyses = usageData.limits ? 
+        usageData.limits.jobAnalyses - usageData.usage.jobAnalyses : -1;
+      
+      if (usageData.limits && remainingAnalyses <= 0) {
+        sendResponse({ 
+          success: false, 
+          error: 'Daily job analysis limit reached. Upgrade to premium for unlimited analyses.',
+          upgradeRequired: true,
+          remainingUsage: 0
+        });
+        return;
+      }
+    }
+
     // Send job data to backend for AI analysis
     const response = await fetch(`${apiUrl}/api/jobs/analyze`, {
       method: 'POST',
@@ -174,6 +196,14 @@ async function handleJobAnalysis(jobData, sendResponse) {
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        sendResponse({ 
+          success: false, 
+          error: 'Daily job analysis limit reached. Upgrade to premium for unlimited analyses.',
+          upgradeRequired: true 
+        });
+        return;
+      }
       throw new Error(`API request failed: ${response.status}`);
     }
 
@@ -317,6 +347,64 @@ async function updateSettings(settings, sendResponse) {
     await chrome.storage.sync.set(settings);
     sendResponse({ success: true });
   } catch (error) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Handle auto-fill usage tracking for premium subscription model
+async function handleAutoFillTracking(fillData, sendResponse) {
+  try {
+    const config = new ExtensionConfig();
+    const apiUrl = await config.getApiUrl();
+    
+    if (!apiUrl) {
+      sendResponse({ success: false, error: 'API URL not configured' });
+      return;
+    }
+
+    // Check usage limits first
+    const usageCheck = await fetch(`${apiUrl}/api/subscription/status`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    
+    if (usageCheck.ok) {
+      const usageData = await usageCheck.json();
+      const remainingAutoFills = usageData.limits ? 
+        usageData.limits.autoFills - usageData.usage.autoFills : -1;
+      
+      if (usageData.limits && remainingAutoFills <= 0) {
+        sendResponse({ 
+          success: false, 
+          error: 'Daily auto-fill limit reached. Upgrade to premium for unlimited auto-fills.',
+          upgradeRequired: true,
+          remainingUsage: 0
+        });
+        return;
+      }
+    }
+
+    // Track the auto-fill usage
+    const response = await fetch(`${apiUrl}/api/usage/autofill`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        site: fillData.site,
+        fieldsCount: fillData.fieldsCount,
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    if (response.ok) {
+      sendResponse({ success: true, data: { tracked: true } });
+    } else {
+      sendResponse({ success: false, error: 'Failed to track auto-fill usage' });
+    }
+  } catch (error) {
+    console.error('Error tracking auto-fill usage:', error);
     sendResponse({ success: false, error: error.message });
   }
 }

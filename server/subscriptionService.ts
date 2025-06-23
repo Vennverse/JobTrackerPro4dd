@@ -8,13 +8,13 @@ export const USAGE_LIMITS = {
     jobAnalyses: 5,
     resumeAnalyses: 2,
     applications: 10,
-    autoFillUsage: 15,
+    autoFills: 15,
   },
   pro: {
     jobAnalyses: -1, // unlimited
     resumeAnalyses: -1, // unlimited
     applications: -1, // unlimited
-    autoFillUsage: -1, // unlimited
+    autoFills: -1, // unlimited
   },
 };
 
