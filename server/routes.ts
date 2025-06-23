@@ -709,8 +709,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await subscriptionService.updateUserSubscription(userId, {
         planType: 'free',
         subscriptionStatus: 'canceled',
-        paypalSubscriptionId: null,
-        paypalOrderId: null,
+        paypalSubscriptionId: null as string | null,
+        paypalOrderId: null as string | null,
         subscriptionEndDate: new Date()
       });
 

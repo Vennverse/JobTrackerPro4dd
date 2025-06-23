@@ -71,7 +71,8 @@ export class SubscriptionService {
     }
 
     const limit = USAGE_LIMITS.free[feature];
-    const currentUsage = usage[`${feature}Count` as keyof typeof usage] as number || 0;
+    const usageKey = feature === 'autoFills' ? 'autoFillsCount' : `${feature}Count`;
+    const currentUsage = usage[usageKey as keyof typeof usage] as number || 0;
     const remaining = Math.max(0, limit - currentUsage);
     
     const tomorrow = new Date();
@@ -170,10 +171,10 @@ export class SubscriptionService {
           limit: limits.applications,
           remaining: limits.applications === -1 ? -1 : Math.max(0, limits.applications - (usage.applicationsCount || 0)),
         },
-        autoFillUsage: {
-          used: usage.autoFillUsageCount || 0,
-          limit: limits.autoFillUsage,
-          remaining: limits.autoFillUsage === -1 ? -1 : Math.max(0, limits.autoFillUsage - (usage.autoFillUsageCount || 0)),
+        autoFills: {
+          used: usage.autoFillsCount || 0,
+          limit: limits.autoFills,
+          remaining: limits.autoFills === -1 ? -1 : Math.max(0, limits.autoFills - (usage.autoFillsCount || 0)),
         },
       },
       resetTime: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),

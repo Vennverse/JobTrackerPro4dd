@@ -262,7 +262,7 @@ export const dailyUsage = pgTable("daily_usage", {
   jobAnalysesCount: integer("job_analyses_count").default(0),
   resumeAnalysesCount: integer("resume_analyses_count").default(0),
   applicationsCount: integer("applications_count").default(0),
-  autoFillUsageCount: integer("auto_fill_usage_count").default(0),
+  autoFillsCount: integer("auto_fills_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
