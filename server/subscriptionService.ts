@@ -120,7 +120,7 @@ export class SubscriptionService {
         jobAnalysesCount: feature === 'jobAnalyses' ? 1 : 0,
         resumeAnalysesCount: feature === 'resumeAnalyses' ? 1 : 0,
         applicationsCount: feature === 'applications' ? 1 : 0,
-        autoFillUsageCount: feature === 'autoFillUsage' ? 1 : 0,
+        autoFillsCount: feature === 'autoFills' ? 1 : 0,
       };
       
       await db.insert(dailyUsage).values(insertData);
